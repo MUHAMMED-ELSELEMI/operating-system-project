@@ -155,3 +155,23 @@ void display_cpu_queues(Process *process_list, int process_count) {
     }
     printf("\n
         }
+
+                
+void sort_by_burst_time(Process *queue, int count) {
+    int i, j, min_idx;
+
+    // Selection sort algorithm
+    for (i = 0; i < count - 1; i++) {
+        min_idx = i;
+        for (j = i + 1; j < count; j++) {
+            if (queue[j].burst_time < queue[min_idx].burst_time) {
+                min_idx = j;
+            }
+        }
+        if (min_idx != i) {
+            Process temp = queue[min_idx];
+            queue[min_idx] = queue[i];
+            queue[i] = temp;
+        }
+    }
+}
