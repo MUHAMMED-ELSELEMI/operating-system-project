@@ -55,3 +55,38 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
+
+
+void display_cpu_queues(Process *process_list, int process_count) {
+    printf("CPU-1 que1(priority-0) (FCFS)→ ");
+    for (int i = 0; i < process_count; i++) {
+        if (process_list[i].priority == 0 && process_list[i].ram <= RESERVED_RAM_FOR_CPU1) {
+            printf("%s-", process_list[i].name);
+        }
+    }
+    printf("\n");
+
+    printf("CPU-2 que2(priority-1) (SJF)→ ");
+    for (int i = 0; i < process_count; i++) {
+        if (process_list[i].priority == 1) {
+            printf("%s-", process_list[i].name);
+        }
+    }
+    printf("\n");
+
+    printf("CPU-2 que3(priority-2) (RR-q8)→ ");
+    for (int i = 0; i < process_count; i++) {
+        if (process_list[i].priority == 2) {
+            printf("%s-", process_list[i].name);
+        }
+    }
+    printf("\n");
+
+    printf("CPU-2 que4(priority-3) (RR-q16)→ ");
+    for (int i = 0; i < process_count; i++) {
+        if (process_list[i].priority == 3) {
+            printf("%s-", process_list[i].name);
+        }
+    }
+    printf("\n
+
