@@ -35,6 +35,28 @@ int main(int argc, char *argv[]) {
     Process process_list[MAX_PROCESSES]; // Array to hold processes
     int process_count = 0;               // Number of processes
 
+    // Load processes from input file
+    load_processes(argv[1], process_list, &process_count);
+
+    // Open output file for writing
+    FILE *output_file = fopen("output.txt", "w");
+    if (output_file == NULL) { // Check if the file opened successfully
+        perror("Error opening output file");
+        return 1;
+    }
+
+    // Allocate processes to CPUs
+    allocate_processes(process_list, process_count, output_file);
+
+    // Display CPU queues
+    display_cpu_queues(process_list, process_count);
+
+    // Close the output file
+    fclose(output_file);
+
+    return 0;
+} 
+
 // Function to load processes from input file
 void load_processes(const char *filename, Process *process_list, int *process_count) {
     FILE *file = fopen(filename, "r");
@@ -121,9 +143,11 @@ void allocate_processes(Process *process_list, int process_count, FILE *output_f
     }
 }
 
-    void sort_processes_by_burst_time(Process *queue, int count) {
+// Function to sort processes by burst time for SJF scheduling
+void sort_by_burst_time(Process *queue, int count) {
     int i, j, min_idx;
 
+    // Selection sort algorithm
     for (i = 0; i < count - 1; i++) {
         min_idx = i;
         for (j = i + 1; j < count; j++) {
@@ -139,15 +163,40 @@ void allocate_processes(Process *process_list, int process_count, FILE *output_f
     }
 }
 
-    // Display CPU queues
-    display_cpu_queues(process_list, process_count);
+// Round Robin scheduling algorithm
+void round_robin(Process *queue, int count, int quantum, FILE *output_file) {
+    int time = 0; // Current time
+    int remaining_burst_times[MAX_PROCESSES]; // Array to hold remaining burst times
 
-    // Close the output file
-    fclose(output_file);
-    
+    // Initialize remaining burst times
+    for (int i = 0; i < count; i++) {
+        remaining_burst_times[i] = queue[i].burst_time;
+    }
 
-    return 0;
-} 
+    // Process each process in a round-robin manner
+    while (1) {
+        int done = 1; // Flag to check if all processes are done
+
+        for (int i = 0; i < count; i++) {
+            if (remaining_burst_times[i] > 0) {
+                done = 0; // There are still processes to execute
+
+                if (remaining_burst_times[i] > quantum) {
+                    time += quantum;
+                    remaining_burst_times[i] -= quantum;
+                } else {
+                    time += remaining_burst_times[i];
+                    remaining_burst_times[i] = 0;
+                    fprintf(output_file, "Process %s is completed and terminated.\n", queue[i].name);
+                }
+            }
+        }
+
+        if (done == 1) { // If all processes are done
+            break;
+        }
+    }
+}
 
 // Function to display CPU queues
 void display_cpu_queues(Process *process_list, int process_count) {
@@ -183,4 +232,3 @@ void display_cpu_queues(Process *process_list, int process_count) {
     }
     printf("\n");
 }
-
