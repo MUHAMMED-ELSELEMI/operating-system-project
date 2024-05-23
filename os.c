@@ -121,6 +121,24 @@ void allocate_processes(Process *process_list, int process_count, FILE *output_f
     }
 }
 
+    void sort_processes_by_burst_time(Process *queue, int count) {
+    int i, j, min_idx;
+
+    for (i = 0; i < count - 1; i++) {
+        min_idx = i;
+        for (j = i + 1; j < count; j++) {
+            if (queue[j].burst_time < queue[min_idx].burst_time) {
+                min_idx = j;
+            }
+        }
+        if (min_idx != i) {
+            Process temp = queue[min_idx];
+            queue[min_idx] = queue[i];
+            queue[i] = temp;
+        }
+    }
+}
+
     // Display CPU queues
     display_cpu_queues(process_list, process_count);
 
