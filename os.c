@@ -89,4 +89,4 @@ void display_cpu_queues(Process *process_list, int process_count) {
         }
     }
     printf("\n
-
+        }
