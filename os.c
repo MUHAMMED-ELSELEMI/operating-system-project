@@ -46,6 +46,71 @@ int main(int argc, char *argv[]) {
 
     // Allocate processes to CPUs
     allocate_processes(process_list, process_count, output_file);
+    // Süreçleri CPU'lara tahsis eden fonksiyon
+void allocate_processes(Process *process_list, int process_count, FILE *output_file) {
+    // CPU1 ve CPU2 için RAM ve CPU kullanımını izleyen değişkenler
+    int cpu1_ram_used = 0;
+    int cpu2_ram_used = 0;
+    int cpu1_cpu_rate_used = 0;
+    int cpu2_cpu_rate_used = 0;
+
+    // CPU1 ve CPU2 için ayrılmış diziler
+    Process cpu1_queue[MAX_PROCESSES];
+    Process cpu2_high_priority_queue[MAX_PROCESSES];
+    Process cpu2_medium_priority_queue[MAX_PROCESSES];
+    Process cpu2_low_priority_queue[MAX_PROCESSES];
+    int cpu1_count = 0, cpu2_high_count = 0, cpu2_medium_count = 0, cpu2_low_count = 0;
+
+    for (int i = 0; i < process_count; i++) {
+        Process current_process = process_list[i];
+
+        // CPU1 için uygun süreçler
+        if (current_process.ram <= RESERVED_RAM_FOR_CPU1 - cpu1_ram_used &&
+            current_process.cpu_rate + cpu1_cpu_rate_used <= 100) {
+            cpu1_queue[cpu1_count++] = current_process;
+            cpu1_ram_used += current_process.ram;
+            cpu1_cpu_rate_used += current_process.cpu_rate;
+        } else {
+            // CPU2 için süreçleri önceliklerine göre ayır
+            if (current_process.priority == 1) {
+                cpu2_high_priority_queue[cpu2_high_count++] = current_process;
+            } else if (current_process.priority == 2) {
+                cpu2_medium_priority_queue[cpu2_medium_count++] = current_process;
+            } else {
+                cpu2_low_priority_queue[cpu2_low_count++] = current_process;
+            }
+            cpu2_ram_used += current_process.ram;
+            cpu2_cpu_rate_used += current_process.cpu_rate;
+        }
+    }
+
+    // CPU1 sürecini çıktı dosyasına yaz
+    fprintf(output_file, "CPU1 Queue:\n");
+    for (int i = 0; i < cpu1_count; i++) {
+        fprintf(output_file, "Process %s\n", cpu1_queue[i].name);
+    }
+
+    // CPU2 sürecini çıktı dosyasına yaz
+    fprintf(output_file, "\nCPU2 High Priority Queue:\n");
+    for (int i = 0; i < cpu2_high_count; i++) {
+        fprintf(output_file, "Process %s\n", cpu2_high_priority_queue[i].name);
+    }
+
+    fprintf(output_file, "\nCPU2 Medium Priority Queue:\n");
+    for (int i = 0; i < cpu2_medium_count; i++) {
+        fprintf(output_file, "Process %s\n", cpu2_medium_priority_queue[i].name);
+    }
+
+    fprintf(output_file, "\nCPU2 Low Priority Queue:\n");
+    for (int i = 0; i < cpu2_low_count; i++) {
+        fprintf(output_file, "Process %s\n", cpu2_low_priority_queue[i].name);
+    }
+
+    // CPU2 için Round Robin zaman dilimleme algoritmasını çağır
+    round_robin(cpu2_medium_priority_queue, cpu2_medium_count, CPU2_QUANTUM_MEDIUM, output_file);
+    round_robin(cpu2_low_priority_queue, cpu2_low_count, CPU2_QUANTUM_LOW, output_file);
+}
+
 
     // Display CPU queues
     display_cpu_queues(process_list, process_count);
