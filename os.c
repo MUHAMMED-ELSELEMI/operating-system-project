@@ -35,18 +35,91 @@ int main(int argc, char *argv[]) {
     Process process_list[MAX_PROCESSES]; // Array to hold processes
     int process_count = 0;               // Number of processes
 
-    // Load processes from input file
-    load_processes(argv[1], process_list, &process_count);
-
-    // Open output file for writing
-    FILE *output_file = fopen("output.txt", "w");
-    if (output_file == NULL) { // Check if the file opened successfully
-        perror("Error opening output file");
-        return 1;
+// Function to load processes from input file
+void load_processes(const char *filename, Process *process_list, int *process_count) {
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) { // Check if the file opened successfully
+        perror("Error opening file");
+        exit(1);
     }
 
-    // Allocate processes to CPUs
-    allocate_processes(process_list, process_count, output_file);
+    // Read process details from file
+    while (fscanf(file, "%[^,],%d,%d,%d,%d,%d\n", 
+                  process_list[*process_count].name, 
+                  &process_list[*process_count].arrival_time, 
+                  &process_list[*process_count].priority, 
+                  &process_list[*process_count].burst_time, 
+                  &process_list[*process_count].ram, 
+                  &process_list[*process_count].cpu_rate) != EOF) {
+        (*process_count)++;
+    }
+
+    fclose(file); // Close the file
+}
+
+// Function to allocate processes to CPUs
+void allocate_processes(Process *process_list, int process_count, FILE *output_file) {
+    int ram_usage_cpu1 = 0; // RAM usage by CPU1
+    int ram_usage_cpu2 = 0; // RAM usage by CPU2
+
+    // Arrays to hold processes for each CPU and priority queue
+    Process cpu1_queue[MAX_PROCESSES];
+    Process cpu2_queue_priority1[MAX_PROCESSES];
+    Process cpu2_queue_priority2[MAX_PROCESSES];
+    Process cpu2_queue_priority3[MAX_PROCESSES];
+
+    // Counters for processes in each queue
+    int cpu1_count = 0;
+    int cpu2_count_priority1 = 0;
+    int cpu2_count_priority2 = 0;
+    int cpu2_count_priority3 = 0;
+
+    // Allocate processes to appropriate CPU and queue
+    for (int i = 0; i < process_count; i++) {
+        if (process_list[i].priority == 0) { // CPU1 processes
+            if (ram_usage_cpu1 + process_list[i].ram <= RESERVED_RAM_FOR_CPU1) {
+                cpu1_queue[cpu1_count++] = process_list[i];
+                ram_usage_cpu1 += process_list[i].ram;
+                fprintf(output_file, "Process %s is queued to be assigned to CPU-1.\n", process_list[i].name);
+            }
+        } else { // CPU2 processes
+            if (ram_usage_cpu2 + process_list[i].ram <= (RAM_SIZE - RESERVED_RAM_FOR_CPU1)) {
+                if (process_list[i].priority == 1) {
+                    cpu2_queue_priority1[cpu2_count_priority1++] = process_list[i];
+                } else if (process_list[i].priority == 2) {
+                    cpu2_queue_priority2[cpu2_count_priority2++] = process_list[i];
+                } else if (process_list[i].priority == 3) {
+                    cpu2_queue_priority3[cpu2_count_priority3++] = process_list[i];
+                }
+                ram_usage_cpu2 += process_list[i].ram;
+                fprintf(output_file, "Process %s is queued to be assigned to CPU-2.\n", process_list[i].name);
+            }
+        }
+    }
+
+    // Process CPU1 queue using FCFS scheduling
+    for (int i = 0; i < cpu1_count; i++) {
+        fprintf(output_file, "Process %s is assigned to CPU-1.\n", cpu1_queue[i].name);
+        fprintf(output_file, "Process %s is completed and terminated.\n", cpu1_queue[i].name);
+    }
+
+    // Process CPU2 queues using different scheduling algorithms
+    if (cpu2_count_priority1 > 0) {
+        sort_by_burst_time(cpu2_queue_priority1, cpu2_count_priority1); // SJF for priority 1
+        for (int i = 0; i < cpu2_count_priority1; i++) {
+            fprintf(output_file, "Process %s is assigned to CPU-2 (Priority 1, SJF).\n", cpu2_queue_priority1[i].name);
+            fprintf(output_file, "Process %s is completed and terminated.\n", cpu2_queue_priority1[i].name);
+        }
+    }
+
+    if (cpu2_count_priority2 > 0) {
+        round_robin(cpu2_queue_priority2, cpu2_count_priority2, CPU2_QUANTUM_MEDIUM, output_file); // RR for priority 2
+    }
+
+    if (cpu2_count_priority3 > 0) {
+        round_robin(cpu2_queue_priority3, cpu2_count_priority3, CPU2_QUANTUM_LOW, output_file); // RR for priority 3
+    }
+}
 
     // Display CPU queues
     display_cpu_queues(process_list, process_count);
